@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.*;
+
 import org.json.*;
 
 /**
@@ -58,12 +59,12 @@ public final class ApiAccessor {
 	}
 	
 	/**
-	 * Retrieves Summoner ID's when given a name. Useful for prediction via user input (web app?)
+	 * Retrieves Summoner objects when given a name. Useful for prediction via user input (web app?)
 	 * @param Summoners Array of Strings of summoner names
 	 * @throws MalformedURLException
 	 * @throws IOException
 	 */
-	public static void retrieveSummonerIDs(String[] Summoners) throws MalformedURLException, IOException {
+	public static void retrieveSummonerObjsByName(String[] Summoners) throws MalformedURLException, IOException {
 		String baseUrl = "v1.4/summoner/by-name/{summonerNames}";
 		StringBuffer summoner = new StringBuffer();
 		
@@ -86,12 +87,36 @@ public final class ApiAccessor {
 		// for now we're just gonna print stuff
 		for (String key : summonerData.keySet()) {
 			JSONObject summonerObj = summonerData.getJSONObject(key);
-			System.out.println(summonerObj.get("name") + ": " + summonerObj.get("id"));
+			System.out.println(summonerObj.toString());
 		}
 	}
 	
-	public static void retrieveWinRate(long SummonerID) {
+	public static void retrieveSummonerStatSummary(long SummonerID, String Gametype) throws MalformedURLException, IOException {
+		String baseUrl = "v1.3/stats/by-summoner/{summonerId}/summary";
+		String summoner = ""+SummonerID;
 		
+		JSONObject summonerData;
+		try {
+			summonerData = sendGet(baseUrl.replace("{summonerId}", summoner), "");
+		} catch (NullPointerException e) {
+			// Didn't work. Just return.
+			return;
+		}
+		
+		JSONObject statMap = new JSONObject();
+
+		JSONArray statArray = summonerData.getJSONArray("playerStatSummaries");
+		
+		for (int i = 0 ; i < statArray.length() ; i++) {
+			JSONObject mode = statArray.getJSONObject(i);
+			
+			if (mode.getString("playerStatSummaryType").equals(Gametype)) {
+				statMap.append(""+summonerData.getLong("summonerId"), mode);
+				break;
+			}
+		}
+		
+		System.out.println(statMap.toString());
 	}
 	
 	public static void retrieveChampionWinRate(long SummonerID, String Champion) {
@@ -113,7 +138,10 @@ public final class ApiAccessor {
 			summoners[0] = "jbiebin";
 			summoners[1] = "solidzer0";
 			
-			retrieveSummonerIDs(summoners);
+			retrieveSummonerObjsByName(summoners);
+			
+			retrieveSummonerStatSummary(22559384, "RankedSolo5x5");
+			retrieveSummonerStatSummary(83325, "RankedSolo5x5");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
