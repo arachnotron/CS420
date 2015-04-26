@@ -9,6 +9,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -97,22 +98,95 @@ public class JsonFileCleaning {
 				//getPreviousStats();
 				
 				JSONArray first_match_participant_identities = first_match.getJSONArray( "participantIdentities" );
+				String summoner_id_list = "";
 				for( int l = 0; l < first_match_participant_identities.length(); l++ ){
+					if( summoner_id_list != "" ){
+						summoner_id_list += ",";
+					}
 					JSONObject first_match_participant_identity = first_match_participant_identities.getJSONObject( l );
 					JSONObject fetched_player_identity = first_match_participant_identity.getJSONObject( "player" );
 					
 					int first_match_summoner_id = fetched_player_identity.getInt( "summonerId" );
 					int first_match_participant_id = first_match_participant_identity.getInt( "participantId" );
+					
+					summoner_id_list += first_match_summoner_id;
 
 					JSONObject current_participant = participant_info.get( Integer.toString( first_match_participant_id ) );
 					current_participant = buildPlayerApiInfo( current_participant, first_match_summoner_id, match_id, target_match_id, target_match_creation_time );
-					
-					
 				}
+				
+				JSONObject first_match_league_info = getLeagueInfo( summoner_id_list );
 			}
 			System.exit( 0 );
 		}
 
+	}
+	
+	public static JSONObject getLeagueInfo( String summoner_id_list ){
+		JSONObject league_info = executeGetRequest( BASE_URL + "v2.5/league/by-summoner/" + summoner_id_list + "/entry?api_key=" + API_KEY );
+		
+		JSONObject league_info_return = new JSONObject();
+		
+		Iterator<String> summoner_id_iterator = league_info.keys();
+		while( summoner_id_iterator.hasNext() ){
+			String summoner_id = summoner_id_iterator.next();
+			
+			JSONArray summoner_league_info = league_info.getJSONArray( summoner_id );
+			for( int n = 0; n < summoner_league_info.length(); n++ ){
+				JSONObject one_league_info = summoner_league_info.getJSONObject( n );
+				
+				if( one_league_info.getString( "queue" ) == "RANKED_SOLO_5x5" ){
+					String tier = one_league_info.getString( "tier" );
+					JSONObject entry = one_league_info.getJSONArray( "entries" ).getJSONObject( 0 );
+					int division = getDivisionMapping( entry.getString( "division" ) );
+					
+					JSONObject league_info_bin = new JSONObject();
+					league_info_bin.put( "tier", tier );
+					league_info_bin.put( "division",  division );
+					
+					league_info_return.put( summoner_id, league_info_bin );
+				}
+			}
+		}
+		
+		return league_info_return;
+	}
+	
+	public static int getDivisionMapping( String division ){
+		switch( division ){
+			case "I":
+				return 1;
+			case "II":
+				return 2;
+			case "III":
+				return 3;
+			case "IV":
+				return 4;
+			case "V":
+				return 5;
+			default:
+				return 0;
+		}
+	}
+	
+	public static int getTierMapping( String tier ){
+		switch( tier ){
+			case "BRONZE":
+				return 1;
+			case "SILVER":
+				return 2;
+			case "GOLD":
+				return 3;
+			case "PLATINUM":
+				return 4;
+			case "DIAMOND":
+				return 5;
+			case "MASTER":
+				return 6;
+			case "CHALLENGER":
+				return 7;
+		}
+		return 8;
 	}
 	
 	public static JSONObject buildPlayerApiInfo( JSONObject current_participant, int summoner_id, int match_id, int target_match_id, int target_match_creation_time ){
@@ -122,7 +196,7 @@ public class JsonFileCleaning {
 		int begin_index = 0;
 		while( search_index == -1 ){
 			//get player ranked match history
-			JSONObject participant_match_history = executeGetRequest( "https://na.api.pvp.net/api/lol/na/v2.2/matchhistory/" + summoner_id + "?beginIndex=" + begin_index + "&rankedQueues=RANKED_SOLO_5x5&api_key=" + API_KEY, match_id );
+			JSONObject participant_match_history = executeGetRequest( BASE_URL + "v2.2/matchhistory/" + summoner_id + "?beginIndex=" + begin_index + "&rankedQueues=RANKED_SOLO_5x5&api_key=" + API_KEY, match_id );
 			
 			JSONArray participant_matches = participant_match_history.getJSONArray( "matches" );
 	
