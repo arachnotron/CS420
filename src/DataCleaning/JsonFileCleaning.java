@@ -1,17 +1,26 @@
 package DataCleaning;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -28,7 +37,7 @@ public class JsonFileCleaning {
 		}
 		
 		String file_name = args[0];
-		
+		prepCsv( file_name );
 		//go through each file
 		String json_string = "";
 		String champion_json_string = "";
@@ -113,19 +122,125 @@ public class JsonFileCleaning {
 
 					JSONObject current_participant = participant_info.get( Integer.toString( first_match_participant_id ) );
 					current_participant = buildPlayerApiInfo( current_participant, first_match_summoner_id, match_id, target_match_id, target_match_creation_time );
+					participant_info.put( Integer.toString( first_match_participant_id ), current_participant );
 				}
 				
-				JSONObject first_match_league_info = getLeagueInfo( summoner_id_list );
+				List<JSONObject> first_match_league_info = getLeagueInfo( summoner_id_list );
+				for( int l = 0; l < first_match_league_info.size(); l++ ){
+					JSONObject player_league_info = first_match_league_info.get( l );
+					JSONObject current_participant = participant_info.get( player_league_info.getString( "summonerId" ) );
+					current_participant.put( "relativeLeaguePlacement", l );
+					participant_info.put( player_league_info.getString( "summonerId" ), current_participant );
+				}
+				outputToCsv( participant_info, file_name );
 			}
-			System.exit( 0 );
 		}
 
 	}
 	
-	public static JSONObject getLeagueInfo( String summoner_id_list ){
+	public static void prepCsv( String file_name ){
+		file_name = file_name.replace( ".json", ".csv" );
+		
+		try{
+			PrintWriter out = new PrintWriter( file_name );
+			out.println( "Team1Side,Champ1WR,Champ2WR,Champ3WR,Champ4WR,Champ5WR,PlayerChamp1WR,PlayerChamp2WR,PlayerChamp3WR,PlayerChamp4WR,PlayerChamp5WR,Player1RecentWR,Player2RecentWR,Player3RecentWR,Player4RecentWR,Player5RecentWR,Player1ChampFreq,Player2ChampFreq,Player3ChampFreq,Player4ChampFreq,Player5ChampFreq,Player1Ranking,Player2Ranking,Player3Ranking,Player4Ranking,Player5Ranking,Champ6WR,Champ7WR,Champ8WR,Champ9WR,Champ10WR,PlayerChamp6WR,PlayerChamp7WR,PlayerChamp8WR,PlayerChamp9WR,PlayerChamp10WR,Player6RecentWR,Player7RecentWR,Player8RecentWR,Player9RecentWR,Player10RecentWR,Player6ChampFreq,Player7ChampFreq,Player8ChampFreq,Player9ChampFreq,Player10ChampFreq,Player6Ranking,Player7Ranking,Player8Ranking,Player9Ranking,Player10Ranking" );
+			out.close();
+		}catch( FileNotFoundException e ){
+			System.err.println( e );
+			System.exit( 1 );
+		}
+	}
+	
+	public static void outputToCsv( HashMap<String, JSONObject> participant_info, String file_name ){
+		file_name = file_name.replace( ".json", ".csv" );
+		try{
+			OutputStream out_stream = new FileOutputStream( new File( file_name ), true );
+			PrintWriter out = new PrintWriter( out_stream );
+			Set<Map.Entry<String,JSONObject>> entry_set = participant_info.entrySet();
+			Iterator<Map.Entry<String,JSONObject>> entry_set_iter = entry_set.iterator();
+			
+			String match_string = "1,";
+			ArrayList<JSONObject> blue_side_json = new ArrayList<JSONObject>();
+			ArrayList<JSONObject> purp_side_json = new ArrayList<JSONObject>();
+			while( entry_set_iter.hasNext() ){
+				JSONObject current_entry = entry_set_iter.next().getValue();
+				if( current_entry.getInt( "teamId" ) == 100 ){
+					blue_side_json.add( current_entry );
+				}else{
+					purp_side_json.add( current_entry );
+				}
+			}
+			for( int i = 0; i < 5; i++ ){
+				switch( i ){
+					case 0:
+						for( int j = 0; j < blue_side_json.size(); j++ ){
+							JSONObject current_json = blue_side_json.get( j );
+							match_string += current_json.getDouble( "championWinRate" ) + ",";
+						}
+					case 1:
+						for( int j = 0; j < blue_side_json.size(); j++ ){
+							JSONObject current_json = blue_side_json.get( j );
+							match_string += current_json.getInt( "championWonGames" ) / current_json.getInt( "championPlayedGames" ) + ",";
+						}
+					case 2:
+						for( int j = 0; j < blue_side_json.size(); j++ ){
+							JSONObject current_json = blue_side_json.get( j );
+							match_string += current_json.getInt( "recentWonGames" ) / current_json.getInt( "recentPlayedGames" ) + ",";
+						}
+					case 3:
+						for( int j = 0; j < blue_side_json.size(); j++ ){
+							JSONObject current_json = blue_side_json.get( j );
+							match_string += current_json.getInt( "championPicked" ) / 15 + ",";
+						}
+					case 4:
+						for( int j = 0; j < blue_side_json.size(); j++ ){
+							JSONObject current_json = blue_side_json.get( j );
+							match_string += current_json.getInt( "relativeLeaguePlacement" ) + ",";
+						}
+				}
+			}
+			for( int i = 0; i < 5; i++ ){
+				switch( i ){
+					case 0:
+						for( int j = 0; j < purp_side_json.size(); j++ ){
+							JSONObject current_json = purp_side_json.get( j );
+							match_string += current_json.getDouble( "championWinRate" ) + ",";
+						}
+					case 1:
+						for( int j = 0; j < purp_side_json.size(); j++ ){
+							JSONObject current_json = purp_side_json.get( j );
+							match_string += current_json.getInt( "championWonGames" ) / current_json.getInt( "championPlayedGames" ) + ",";
+						}
+					case 2:
+						for( int j = 0; j < purp_side_json.size(); j++ ){
+							JSONObject current_json = purp_side_json.get( j );
+							match_string += current_json.getInt( "recentWonGames" ) / current_json.getInt( "recentPlayedGames" ) + ",";
+						}
+					case 3:
+						for( int j = 0; j < purp_side_json.size(); j++ ){
+							JSONObject current_json = purp_side_json.get( j );
+							match_string += current_json.getInt( "championPicked" ) / 15 + ",";
+						}
+					case 4:
+						for( int j = 0; j < purp_side_json.size(); j++ ){
+							JSONObject current_json = purp_side_json.get( j );
+							match_string += current_json.getInt( "relativeLeaguePlacement" ) + ",";
+						}
+				}
+			}
+			match_string = match_string.substring( 0, match_string.length() - 1 );
+			out.println( match_string );
+			out.close();
+			System.exit( 0 );
+		}catch( FileNotFoundException e ){
+			System.err.println( e );
+		}
+	}
+	
+	public static List<JSONObject> getLeagueInfo( String summoner_id_list ){
 		JSONObject league_info = executeGetRequest( BASE_URL + "v2.5/league/by-summoner/" + summoner_id_list + "/entry?api_key=" + API_KEY );
 		
-		JSONObject league_info_return = new JSONObject();
+		List<JSONObject> league_info_return = new ArrayList<JSONObject>();
 		
 		Iterator<String> summoner_id_iterator = league_info.keys();
 		while( summoner_id_iterator.hasNext() ){
@@ -143,11 +258,28 @@ public class JsonFileCleaning {
 					JSONObject league_info_bin = new JSONObject();
 					league_info_bin.put( "tier", tier );
 					league_info_bin.put( "division",  division );
+					league_info_bin.put( "summonerId", summoner_id );
 					
-					league_info_return.put( summoner_id, league_info_bin );
+					league_info_return.add( league_info_bin );
 				}
 			}
 		}
+		
+		Collections.sort( league_info_return, new Comparator<JSONObject>(){
+			public int compare( JSONObject o1, JSONObject o2 ){
+				int tier1 = o1.getInt( "tier" );
+				int div1 = o1.getInt( "division" );
+				int tier2 = o2.getInt( "tier" );
+				int div2 = o2.getInt( "division" );
+				if( tier1 == tier2 ){
+					if( div1 == div2 ){
+						return 0;
+					}
+					return div1 < div2 ? -1 : 1;
+				}
+				return tier1 < tier2 ? -1 : 1;
+			}
+		});
 		
 		return league_info_return;
 	}
@@ -206,7 +338,7 @@ public class JsonFileCleaning {
 				int participant_match_id = participant_match.getInt( "matchId" );
 				if( participant_match_id == target_match_id ){
 					search_index = m + 1;
-					JSONObject desired_match_history = executeGetRequest( "https://na.api.pvp.net/api/lol/na/v2.2/matchhistory/" + summoner_id + "?beginIndex=" + search_index + "&api_key=" + API_KEY );
+					JSONObject desired_match_history = executeGetRequest( BASE_URL + "v2.2/matchhistory/" + summoner_id + "?beginIndex=" + search_index + "&api_key=" + API_KEY );
 					JSONArray desired_matches = desired_match_history.getJSONArray( "matches" );
 					//parse previous matches before desired match
 					for( int n = 0; n < desired_matches.length(); n++ ){ //This is getting ridiculous
@@ -230,7 +362,7 @@ public class JsonFileCleaning {
 						current_participant.put( "championPicked", champion_picked );
 					}
 					
-					JSONObject champ_wr_mh = executeGetRequest( BASE_URL + "v2.2/matchhistory/" + summoner_id + "?beginIndex=" + search_index + "&championIds=" + current_participant.getDouble( "championId") + "&api_key=" + API_KEY );
+					JSONObject champ_wr_mh = executeGetRequest( BASE_URL + "v2.2/matchhistory/" + summoner_id + "?beginIndex=" + search_index + "&championIds=" + current_participant.getInt( "championId" ) + "&api_key=" + API_KEY );
 					JSONArray champ_wr_matches = champ_wr_mh.getJSONArray( "matches" );
 					for( int n = 0; n < champ_wr_matches.length(); n++ ){
 						JSONObject champ_wr_match = champ_wr_matches.getJSONObject( n );
@@ -297,6 +429,7 @@ public class JsonFileCleaning {
 	public static JSONObject executeGetRequest( String url ){
 		try{
 			URL mh_url = new URL( url );
+			System.err.println( url );
 			HttpURLConnection con = (HttpURLConnection) mh_url.openConnection();
 			int responseCode = con.getResponseCode();
 			if( responseCode != 200 ){
