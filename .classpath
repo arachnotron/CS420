@@ -3,5 +3,9 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="C:/Users/C/Desktop/git_proj/cs420/bin/include/Java-JSON.jar"/>
+	<classpathentry kind="lib" path="C:/Users/C/Desktop/git_proj/cs420/bin/include/Naive-Bayes-Classifier.jar"/>
+	<classpathentry kind="lib" path="C:/Users/C/Desktop/git_proj/cs420/bin/include/weka/remoteExperimentServer.jar"/>
+	<classpathentry kind="lib" path="C:/Users/C/Desktop/git_proj/cs420/bin/include/weka/weka.jar"/>
+	<classpathentry kind="lib" path="C:/Users/C/Desktop/git_proj/cs420/bin/include/weka/weka-src.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
