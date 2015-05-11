@@ -6,7 +6,7 @@ import de.daslaboratorium.machinelearning.classifier.*;
 
 public class NaiveBayesClassification {
 	
-	private Classifier<Double, Double> bayes;
+	private Classifier<Double, Integer> bayes;
 	private int successes = 0;
 	private int falseT1 = 0;
 	private int falseT2 = 0;
@@ -15,8 +15,8 @@ public class NaiveBayesClassification {
 	 * Builds Naive Bayes Classifier wrapper class
 	 */
 	public NaiveBayesClassification() {
-		bayes = new BayesClassifier<Double, Double>();
-		bayes.setMemoryCapacity(1000);
+		bayes = new BayesClassifier<Double, Integer>();
+		bayes.setMemoryCapacity(2000);
 	}
 	
 	/**
@@ -27,11 +27,11 @@ public class NaiveBayesClassification {
 	 */
 	public void learn(CSVExtractor CSV) {
 		for (List<Double> record : CSV.getVictories()) {
-			bayes.learn(1.0, record);
+			bayes.learn(1, record);
 		}
 		
 		for (List<Double> record : CSV.getDefeats()) {
-			bayes.learn(0.0, record);
+			bayes.learn(0, record);
 		}
 	}
 	
@@ -45,14 +45,14 @@ public class NaiveBayesClassification {
 		
 		for (int i = 0 ; i < records.size() ; i++) {
 			List<Double> record = records.get(i);
-			Double category = bayes.classify(record).getCategory();
+			Integer category = bayes.classify(record).getCategory();
 			
 			// If it's a victory but was classified as defeat, it fails
-			if (CSV.getVictories().contains(record) && category.equals(0.0)) {
-				falseT2++; System.out.println(record);
+			if (CSV.getVictories().contains(record) && category.equals(0)) {
+				falseT2++; //System.out.println(record);
 			// If it's a defeat but was classified as a victory, it fails
-			} else if (CSV.getDefeats().contains(record) && category.equals(1.0)) {
-				falseT1++; System.out.println(record);
+			} else if (CSV.getDefeats().contains(record) && category.equals(1)) {
+				falseT1++; //System.out.println(record);
 			// Otherwise it's a success
 			} else
 				successes++;
@@ -85,10 +85,10 @@ public class NaiveBayesClassification {
 	
 	/**
 	 * Returns the success rate of the classifier.
-	 * @return		Double value representing success rate.
+	 * @return		String value representing success rate.
 	 */
 	public Double getSuccessRate() {
-		return (double)successes/(double)(successes+falseT1+falseT2);
+		return (double)(successes)/(double)(successes+falseT1+falseT2);
 	}
 	
 }

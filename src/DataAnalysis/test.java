@@ -1,40 +1,64 @@
 package DataAnalysis;
 
 import java.io.IOException;
+import weka.core.converters.ConverterUtils.DataSource;
+import weka.core.Instances;
 
 public class test {
+	private static String loc = "C://Users/C/Desktop/git_proj/cs420/matches{$}.csv";
+	
+	/**
+	 * NaiveBayes creation & validation
+	 * @param validation
+	 * @throws IOException
+	 */
+	private static void validateOn(int validation) throws IOException {
+		CSVExtractor training = new CSVExtractor();
+		// Read in training data.
+		for (int i = 1; i <= 10; i++) {
+			if (i == validation)
+				continue;
+			training.extract(loc.replace("{$}", Integer.toString(i)), false);
+		}
+		
+		CSVExtractor validationSet = new CSVExtractor();
+		// Read in validation data as unknown so we can test against it.
+		validationSet.extract(loc.replace("{$}", Integer.toString(validation)), true);
+		
+		NaiveBayesClassification nbclass = new NaiveBayesClassification();
+		
+		// Teach the classifier using all of the training data.
+		nbclass.learn(training);
+		// Classify the "unknown" data and compare against validation.
+		nbclass.classify(validationSet);
+		
+		System.out.println("---VALIDATION SET NUMBER " + validation + "--------------");
+		System.out.printf("Successfully Classified: %d\n", nbclass.getSuccess());
+		System.out.println("\tMISCLASSIFICATION");
+		System.out.printf("T1 Victory: %d\tT2 Victory: %d\n", nbclass.getFalseT1(), nbclass.getFalseT2());
+		System.out.printf("Success Rate of Classification: %.2f\n", nbclass.getSuccessRate());
+		System.out.println("----------------------------------------\n");
+	}
+	
+	private static void knnValidate() throws Exception {
+		DataSource source = new DataSource(loc.replace("{$}", "full"));
+		Instances ins = source.getDataSet();
+
+		KnnClassification k = new KnnClassification(9, ins);
+		k.classify();
+	}
 	
 	public static void main(String[] args){ 
 		try {
-			// Read in training data.
-			CSVExtractor training = new CSVExtractor();
-			training.extract("C://Users/C/Desktop/git_proj/cs420/matches1.csv", false);
-			training.extract("C://Users/C/Desktop/git_proj/cs420/matches2.csv", false);
-			training.extract("C://Users/C/Desktop/git_proj/cs420/matches3.csv", false);
-			training.extract("C://Users/C/Desktop/git_proj/cs420/matches4.csv", false);
-			training.extract("C://Users/C/Desktop/git_proj/cs420/matches5.csv", false);
+			for (int i = 1; i <= 10; i++) {
+				validateOn(i);
+			}
 			
-			CSVExtractor validation = new CSVExtractor();
-			// Read in validation data as unknown so we can test against it.
-			validation.extract("C://Users/C/Desktop/git_proj/cs420/matches6.csv", true);
-			validation.extract("C://Users/C/Desktop/git_proj/cs420/matches7.csv", true);
-
-			NaiveBayesClassification nbclass = new NaiveBayesClassification();
-			
-			// Teach the classifier using all of the training data.
-			nbclass.learn(training);
-			nbclass.learn(training);
-			// Classify the "unknown" data and compare against validation.
-			nbclass.classify(validation);
-			
-			System.out.println("----------------------------------------");
-			System.out.printf("Successfully Classified: %d\n", nbclass.getSuccess());
-			System.out.println("\tMISCLASSIFICATION");
-			System.out.printf("T1 Victory: %d\tT2 Victory: %d\n", nbclass.getFalseT1(), nbclass.getFalseT2());
-			System.out.printf("Success Rate of Classification: %.2f\n", nbclass.getSuccessRate());
-			System.out.println("----------------------------------------");
+			knnValidate();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
