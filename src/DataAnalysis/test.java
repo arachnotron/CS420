@@ -1,11 +1,11 @@
 package DataAnalysis;
 
 import java.io.IOException;
-import weka.core.converters.ConverterUtils.DataSource;
-import weka.core.Instances;
+//import weka.core.converters.ConverterUtils.DataSource;
+//import weka.core.Instances;
 
 public class test {
-	private static String loc = "C://Users/C/Desktop/git_proj/cs420/matches{$}.csv";
+	private static String loc = "../cs420/matches{$}.csv";
 	
 	/**
 	 * NaiveBayes creation & validation
@@ -40,13 +40,13 @@ public class test {
 		System.out.println("----------------------------------------\n");
 	}
 	
-	private static void knnValidate() throws Exception {
-		DataSource source = new DataSource(loc.replace("{$}", "full"));
-		Instances ins = source.getDataSet();
-
-		KnnClassification k = new KnnClassification(9, ins);
-		k.classify();
-	}
+//	private static void knnValidate() throws Exception {
+//		DataSource source = new DataSource(loc.replace("{$}", "full"));
+//		Instances ins = source.getDataSet();
+//
+//		KnnClassification k = new KnnClassification(9, ins);
+//		k.classify();
+//	}
 	
 	public static void main(String[] args){ 
 		try {
@@ -54,7 +54,7 @@ public class test {
 				validateOn(i);
 			}
 			
-			knnValidate();
+//			knnValidate();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
