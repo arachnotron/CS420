@@ -1,8 +1,8 @@
 package DataAnalysis;
 
 import java.io.IOException;
-//import weka.core.converters.ConverterUtils.DataSource;
-//import weka.core.Instances;
+import weka.core.converters.ConverterUtils.DataSource;
+import weka.core.Instances;
 
 public class test {
 	private static String loc = "../cs420/matches{$}.csv";
@@ -40,13 +40,19 @@ public class test {
 		System.out.println("----------------------------------------\n");
 	}
 	
-//	private static void knnValidate() throws Exception {
-//		DataSource source = new DataSource(loc.replace("{$}", "full"));
-//		Instances ins = source.getDataSet();
-//
-//		KnnClassification k = new KnnClassification(9, ins);
-//		k.classify();
-//	}
+	private static void knnValidate() throws Exception {
+		DataSource source = new DataSource(loc.replace("{$}", "_avg"));
+		Instances ins = source.getDataSet();
+
+		KnnClassification k = new KnnClassification(13, ins);
+		k.validate();
+		
+		System.out.println("---VALIDATION OF K-NN------------------");
+		System.out.printf("Successfully Classified: %d\n", k.getSuccess());
+		System.out.printf("Success Rate of Classification: %.2f\n", k.getSuccessRate());
+		System.out.printf("Avg. Success Rate of Validation: %.2f\n", k.getAvgSuccessRate());
+		System.out.println("----------------------------------------\n");
+	}
 	
 	public static void main(String[] args){ 
 		try {
@@ -54,7 +60,7 @@ public class test {
 				validateOn(i);
 			}
 			
-//			knnValidate();
+			knnValidate();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
